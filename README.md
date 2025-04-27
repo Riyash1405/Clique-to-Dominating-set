@@ -7,7 +7,7 @@ This project analyzes a given graph to:
 - Try to find a **maximum clique back inside** the dominating set
 - **Visualize** all key results (input graph, clique, dominating set, maximum clique)
 
-All steps are optimized — **no brute force** methods are used.
+
 
 ---
 
