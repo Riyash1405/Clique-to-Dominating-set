@@ -14,33 +14,11 @@ def read_graph_from_csv(file_path):
     G = nx.from_numpy_array(np.array(adj_matrix))
     return G
 
-# Function to find a maximum clique (greedy approach)
+# Function to find a maximum clique (correct method)
 def find_max_clique(G):
-    vertices = list(G.nodes())
-    clique = []
-    candidates = vertices.copy()
-    
-    while candidates:
-        # Choose vertex with maximum degree
-        degrees = [(v, G.degree(v)) for v in candidates]
-        v, _ = max(degrees, key=lambda x: x[1])
-        clique.append(v)
-        
-        # Keep only vertices that are neighbors of v
-        neighbors = set(G.neighbors(v))
-        candidates = [u for u in candidates if u in neighbors or u == v]
-        candidates.remove(v)
-        
-        # Check if remaining candidates form a clique
-        if not candidates:
-            break
-        subgraph = G.subgraph(candidates)
-        is_clique = all(subgraph.has_edge(u, w) for u in candidates for w in candidates if u < w)
-        if not is_clique:
-            clique.pop()
-            break
-    
-    return clique
+    cliques = list(nx.find_cliques(G))  # Finds all maximal cliques
+    max_clique = max(cliques, key=lambda x: len(x))  # Pick the largest one
+    return max_clique
 
 # Function to verify if a set is a clique
 def verify_clique(G, clique):
@@ -85,17 +63,25 @@ def verify_dominating_set(G, dom_set):
         covered.update(G.neighbors(v))
     return len(covered) == G.number_of_nodes()
 
-# Function to transform dominating set to clique (if possible)
-def dominating_set_to_clique(G, dom_set):
-    # Induced subgraph of dominating set
+# # Function to transform dominating set to clique (if possible)
+# def dominating_set_to_clique(G, dom_set):
+#     # Induced subgraph of dominating set
+#     subgraph = G.subgraph(dom_set)
+#     if all(subgraph.has_edge(u, v) for u in dom_set for v in dom_set if u < v):
+#         return list(dom_set)
+#     return None  # Not a clique
+def dominating_set_to_max_clique(G, dom_set):
     subgraph = G.subgraph(dom_set)
-    if all(subgraph.has_edge(u, v) for u in dom_set for v in dom_set if u < v):
-        return list(dom_set)
-    return None  # Not a clique
+    cliques = list(nx.find_cliques(subgraph))
+    if not cliques:
+        return None
+    max_clique = max(cliques, key=lambda x: len(x))
+    return max_clique
+
 
 # Function to visualize and save graph
 def visualize_graph(G, highlighted_nodes=None, title="Graph", filename="graph.png"):
-    pos = nx.spring_layout(G)
+    pos = nx.spring_layout(G, seed=42)  # Seeded for consistent layout
     plt.figure(figsize=(8, 8))
     
     # Draw all nodes
@@ -107,6 +93,7 @@ def visualize_graph(G, highlighted_nodes=None, title="Graph", filename="graph.pn
     nx.draw_networkx_edges(G, pos)
     nx.draw_networkx_labels(G, pos)
     plt.title(title)
+    plt.axis('off')
     plt.savefig(filename)
     plt.close()
 
@@ -135,13 +122,22 @@ def main():
     print(f"Is Dominating Set Valid? {'Yes' if verify_dominating_set(G, dominating_set) else 'No'}")
     visualize_graph(G, highlighted_nodes=dominating_set, title="Dominating Set", filename="dominating_set_graph.png")
     
-    # Transform dominating set back to clique
-    new_clique = dominating_set_to_clique(G, dominating_set)
+    # # Transform dominating set back to clique
+    # new_clique = dominating_set_to_clique(G, dominating_set)
+    # if new_clique:
+    #     print(f"New Clique from Dominating Set: {new_clique}")
+    #     print(f"Is New Clique Valid? {'Yes' if verify_clique(G, new_clique) else 'No'}")
+    # else:
+    #     print("Dominating Set is not a clique.")
+
+    new_clique = dominating_set_to_max_clique(G, dominating_set)
     if new_clique:
-        print(f"New Clique from Dominating Set: {new_clique}")
+        print(f"Maximum Clique inside Dominating Set: {new_clique}")
         print(f"Is New Clique Valid? {'Yes' if verify_clique(G, new_clique) else 'No'}")
+        visualize_graph(G, highlighted_nodes=new_clique, title="Max Clique in Dominating Set", filename="max_clique_in_domset_graph.png")
     else:
-        print("Dominating Set is not a clique.")
+        print("No clique found inside dominating set.")
+
 
 if __name__ == "__main__":
     main()
